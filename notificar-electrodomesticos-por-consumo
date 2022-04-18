@@ -1,0 +1,88 @@
+blueprint:
+  name: Un electrodoméstico finaliza el programa. (Lavadora, secadora, lavavajillas...)
+  description: Utiliza un medidor de consumo para ejecutar una acción cuando un 
+     electrodoméstico (ej. lavadora, secadora, etc) ha finalizado.
+  domain: automation
+  input:
+    sensor_potencia:
+      name: Sensor de potencia
+      description: Entidad del sensor (ej. un enchufe inteligente).
+      selector:
+        entity:
+          domain: sensor
+          multiple: false
+    inicio_programa:
+      name: Inicio del programa
+      description: Umbral de potencia por el cual al superarlo se considera que el programa ha comenzado.
+      default: 5
+      selector:
+        number:
+          min: 1.0
+          max: 100.0
+          unit_of_measurement: W
+          mode: slider
+          step: 1.0
+    margen_inicio:
+      name: Margen de espera para el inicio
+      description: El tiempo durante el cual deberá mantenerse superando el umbral para considerar el inicio.
+      default: 5
+      selector:
+        number:
+          min: 0.25
+          max: 60.0
+          unit_of_measurement: min
+          mode: slider
+          step: 0.25
+    fin_programa:
+      name: Fin del programa
+      description: Umbral de potencia por el cual se considera que el programa ha finalizado.
+      default: 5
+      selector:
+        number:
+          min: 1.0
+          max: 100.0
+          unit_of_measurement: W
+          mode: slider
+          step: 1.0
+    margen_fin:
+      name: Margen de espera para finalizar
+      description: El tiempo durante el cual deberá mantenerse inferior el umbral para considerar que ha finalizado.
+      default: 5
+      selector:
+        number:
+          min: 0.25
+          max: 60.0
+          unit_of_measurement: min
+          mode: slider
+          step: 0.25
+    acciones_fin:
+      name: Acciones al finalizar
+      description: Acciones al finalizar (ej. enviar una notificación, anuncio por TTS, etc)
+      selector:
+        action: {}
+    acciones_inicio:
+      name: Acciones al inicio
+      description: Actions al detectar el inicio del programa
+      selector:
+        action: {}
+  source_url: https://gist.github.com/sbyx/6d8344d3575c9865657ac51915684696
+trigger:
+- platform: numeric_state
+  entity_id: !input 'sensor_potencia'
+  for:
+    minutes: !input 'margen_inicio'
+  above: !input 'inicio_programa'
+condition: []
+action:
+- choose: []
+  default: !input 'acciones_inicio'
+- wait_for_trigger:
+  - platform: numeric_state
+    entity_id: !input 'sensor_potencia'
+    below: !input 'fin_programa'
+    for:
+      minutes: !input 'margen_fin'
+- choose: []
+  default: !input 'acciones_fin'
+mode: single
+max_exceeded: silent
